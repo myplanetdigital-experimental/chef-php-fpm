@@ -20,11 +20,12 @@
 
 case node['platform']
 when 'ubuntu'
-  if node['platform_version'].to_f <= 10.04
+  # The new ppa support Ubuntu 10.04 and higher
+  if node['platform_version'].to_f >= 10.04
     # Configure Nginx PPA
     # We'll install php5-fpm from the Nginx PPA backports
     apt_repository "nginx-php" do
-      uri "http://ppa.launchpad.net/nginx/php5/ubuntu"
+      uri "http://ppa.launchpad.net/nginx/php5.3/ubuntu"
       distribution node['lsb']['codename']
       components ["main"]
       keyserver "keyserver.ubuntu.com"
