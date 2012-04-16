@@ -20,7 +20,7 @@
 
 case node['platform']
 when 'ubuntu'
-  if node['platform_version'].to_f <= 10.04
+  if Chef::VersionConstraint.new("<= 10.04").include?(node['platform_version'])
     # Configure Nginx PPA
     # We'll install php5-fpm from the Nginx PPA backports
     apt_repository "nginx-php" do
@@ -36,7 +36,7 @@ when 'debian'
   # Configure Dotdeb repos
   # TODO: move this to it's own 'dotdeb' cookbook?
   # http://www.dotdeb.org/instructions/
-  if node.platform_version.to_f >= 5.0
+  if Chef::VersionConstraint.new(">= 5.0").include?(node['platform_version'])
     apt_repository "dotdeb" do
       uri "http://packages.dotdeb.org"
       distribution "stable"
