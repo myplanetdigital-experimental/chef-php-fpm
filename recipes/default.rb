@@ -18,6 +18,8 @@
 # limitations under the License.
 #
 
+centos6 = (node['platform'] == 'centos' && Chef::VersionConstraint.new("~> 6.0").include?(node['platform_version']))
+
 case node['platform']
 when 'ubuntu'
   if Chef::VersionConstraint.new("<= 10.04").include?(node['platform_version'])
@@ -61,24 +63,45 @@ when 'debian'
     end
   end
 when 'centos', 'redhat', 'fedora'
-  # Configure IUS repo
-  # http://rob.olmos.name/2010/08/centos-5-5-php-5-3-3-php-fpm-nginx-rpms/
-  # TODO: verify this is the best repo
-  yum_repository "ius" do
-    url "http://dl.iuscommunity.org/pub/ius/stable/Redhat/5.5/$basearch"
-    action :add
+  if centos6
+    # Configure REMI and EPEL
+    # http://www.lifelinux.com/how-to-install-nginx-and-php-fpm-on-centos-6-via-yum/
+    include_recipe "yum::epel"
+
+    yum_key "RPM-GPG-KEY-remi" do
+      url "http://rpms.famillecollet.com/RPM-GPG-KEY-remi"
+      action :add
+    end
+
+    yum_repository "remi" do
+      name "Les RPM de remi pour Enterprise Linux $releasever - $basearch"
+      url "http://rpms.famillecollet.com/enterprise/$releasever/remi/mirror"
+      mirrorlist true
+      key "RPM-GPG-KEY-remi"
+      action :add
+    end
+  else
+    # Configure IUS repo
+    # http://rob.olmos.name/2010/08/centos-5-5-php-5-3-3-php-fpm-nginx-rpms/
+    # TODO: verify this is the best repo
+    yum_repository "ius" do
+      url "http://dl.iuscommunity.org/pub/ius/stable/Redhat/5.5/$basearch"
+      action :add
+    end
   end
 end
 
 pkgs = value_for_platform(
   %w{ centos redhat fedora } => {
-    "default" => %w{ php53u-fpm and php53u-pecl-apc }
+    "default" => %w{ php53u-fpm php53u-pecl-apc }
   },
   %w{ debian ubuntu } => {
     "default" => %w{ php5-cgi php5-fpm }
   },
   "default" => %w{ php5-cgi php5-fpm }
 )
+
+pkgs = %w{php php-fpm php-common php-cli php-pear} if centos6
 
 unless platform?(%w{ centos redhat fedora })
   # TODO: look into the php53u-*/php53-* conflict
